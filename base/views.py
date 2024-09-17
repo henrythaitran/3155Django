@@ -9,45 +9,45 @@ from django.contrib.auth.forms import UserCreationForm
 from .models import Room, Topic, Message
 from .forms import RoomForm
 
-# Create your views here.
 
 #rooms = [
-#    {'id':1, 'name': 'Lets learn python!'},
-#   {'id':2, 'name': 'Design with me'},
-#    {'id':3, 'name': 'Frontend developers'},
+#    {'id':1, 'name':'Lets learn Python'},
+#    {'id':2, 'name':'Design with me'},
+#    {'id':3, 'name':'Front end Developers'},
 #]
 
 def loginPage(request):
 
     page = 'login'
-        
+
     if request.user.is_authenticated:
         return redirect('home')
 
+    #means user entered their information
     if request.method == 'POST':
-        username = request.Post.get('username').lower()
-        password = request.Post.get('password')
+        username = request.POST.get('username').lower()
+        password = request.POST.get('password')
 
-        try:
+        try: #check if user exists
             user = User.objects.get(username=username)
         except:
             messages.error(request, 'User does not exist')
 
-        user = authenticate(request, 'base/login_register.html', context)
+        #if user exists, make sure credentials are correct, get user object based on username and password
+        user = authenticate(request, username=username, password=password)
 
         if user is not None:
-            login(request, user)
-            return redirect('home')
+            login(request, user) #log user in
+            return redirect('home') #redirect user
         else:
-            messages.error(request, 'Username OR password does not exist')
-
+            messages.error(request, 'Username or password does not exist')
 
     context = {'page':page}
-    return render (request, 'base/login_register.html', context)
+    return render(request, 'base/login_register.html', context)
 
 def logoutUser(request):
     logout(request)
-    return redirect ('home')
+    return redirect('home')
 
 def registerPage(request):
     form = UserCreationForm()
@@ -64,9 +64,10 @@ def registerPage(request):
             messages.error(request, 'An error ocurred during registration')
 
     return render(request, 'base/login_register.html', {'form':form})
-
+ 
 
 def home(request):
+
     q = request.GET.get('q') if request.GET.get('q') != None else ''
 
     rooms = Room.objects.filter(
@@ -74,19 +75,18 @@ def home(request):
         Q(name__icontains=q) |
         Q(description__icontains=q)
         )
-
+                                   
     topics = Topic.objects.all()
     room_count = rooms.count()
-    
 
-    context = {'rooms': rooms, 'topics':topics, 'room_count':room_count}
+    context = {'rooms': rooms, 'topics': topics, 'room_count': room_count}
     return render(request, 'base/home.html', context)
 
 
 
-def room(request, pk):
+def room(request, pk): 
     room = Room.objects.get(id=pk)
-    room_messages = room.message_set.all().order_by('-created')
+    room_messages = room.message_set.all().order_by('-created') #get set of messages related to this room
 
     participants = room.participants.all()
 
@@ -102,6 +102,8 @@ def room(request, pk):
     context = {'room': room, 'room_messages': room_messages, 'participants': participants}
     return render(request, 'base/room.html', context)
 
+    #this allows us to pass the room information into the template
+
 @login_required(login_url='login')
 def createRoom(request):
     form = RoomForm()
@@ -110,8 +112,8 @@ def createRoom(request):
         if form.is_valid():
             form.save()
             return redirect('home')
-        
-    context = {'form': form}
+
+    context = {'form':form}
     return render(request, 'base/room_form.html', context)
 
 @login_required(login_url='login')
